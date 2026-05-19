@@ -1,5 +1,6 @@
 import asyncio
 import sys
+from pathlib import Path
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -21,6 +22,7 @@ from src.db.session import get_session_factory
 
 
 def _setup_logging(log_level: str) -> None:
+    Path("logs").mkdir(exist_ok=True)
     logger.remove()
     logger.add(
         sys.stderr,
@@ -33,6 +35,21 @@ def _setup_logging(log_level: str) -> None:
         ),
         colorize=True,
     )
+    logger.add(
+        "logs/bot.log",
+        level=log_level,
+        rotation="10 MB",
+        retention="30 days",
+        compression="zip",
+        encoding="utf-8",
+    )
+
+
+async def _heartbeat_task() -> None:
+    heartbeat = Path("/tmp/heartbeat")
+    while True:
+        heartbeat.touch()
+        await asyncio.sleep(15)
 
 
 async def _seed_categories() -> None:
@@ -66,10 +83,12 @@ async def main() -> None:
     await _seed_categories()
     logger.info("System categories seeded")
 
+    heartbeat = asyncio.create_task(_heartbeat_task())
     logger.info("Polling started")
     try:
         await dp.start_polling(bot)
     finally:
+        heartbeat.cancel()
         await bot.session.close()
         logger.info("Bot stopped")
 

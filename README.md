@@ -78,13 +78,109 @@ alembic upgrade head
 python -m src.main
 ```
 
-### Docker
+### Docker (локально)
 
 ```bash
 cp .env.example .env
 # Відредагувати .env: вписати BOT_TOKEN
 
 docker compose up -d
+# Бот запускається, застосовує міграції автоматично
+
+docker compose logs -f          # перегляд логів
+docker compose ps               # статус (should be healthy після ~60s)
+docker compose down             # зупинка
+```
+
+### Деплой на VPS (Ubuntu/Debian)
+
+```bash
+# 1. Встановити Docker
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER && newgrp docker
+
+# 2. Клонувати репозиторій та налаштувати
+git clone https://github.com/your-username/budzhetnyk.git
+cd budzhetnyk
+cp .env.example .env
+nano .env   # вписати BOT_TOKEN
+
+# 3. Запустити
+docker compose up -d --build
+
+# 4. Автоматичне резервне копіювання (cron)
+# Додати до crontab -e:
+# 0 3 * * * /path/to/budzhetnyk/scripts/backup.sh >> /var/log/budzhetnyk-backup.log 2>&1
+```
+
+### Деплой на Railway
+
+1. Зареєструватись на [railway.app](https://railway.app)
+2. New Project → Deploy from GitHub repo
+3. У розділі Variables додати:
+   - `BOT_TOKEN` — токен бота
+   - `DB_URL` — `sqlite+aiosqlite:///data/expenses.db`
+   - `LOG_LEVEL` — `INFO`
+4. Railway автоматично зберуть Docker-образ і задеплоять
+
+### Деплой на Fly.io
+
+```bash
+# Встановити flyctl
+curl -L https://fly.io/install.sh | sh
+
+# Авторизація
+fly auth login
+
+# Ініціалізувати проект (з кореня репозиторію)
+fly launch --no-deploy
+
+# Додати секрети
+fly secrets set BOT_TOKEN=your_token_here
+
+# Створити volume для бази даних
+fly volumes create bot_data --size 1
+
+# Задеплоїти
+fly deploy
+```
+
+Мінімальний `fly.toml` (генерується автоматично, можливо потребуватиме коригування):
+```toml
+[mounts]
+  source = "bot_data"
+  destination = "/app/data"
+```
+
+## Резервне копіювання
+
+```bash
+# Разовий бекап
+./scripts/backup.sh
+
+# З кастомними шляхами
+BACKUP_DIR=/mnt/backups DB_PATH=./data/expenses.db ./scripts/backup.sh
+
+# Автоматично через cron (щодня о 03:00)
+# Додати до crontab -e:
+0 3 * * * /path/to/budzhetnyk/scripts/backup.sh
+```
+
+Скрипт зберігає останні 7 резервних копій у `backups/expenses_YYYYMMDD_HHMMSS.db`.
+
+## Логи
+
+Логи пишуться одночасно у stderr (stdout Docker) та у файл `logs/bot.log`:
+- Ротація: при досягненні 10 MB
+- Зберігання: 30 днів
+- Стиснення: zip
+
+```bash
+# Docker
+docker compose logs -f bot
+
+# Локально
+tail -f logs/bot.log
 ```
 
 ## Конфігурація (`.env`)

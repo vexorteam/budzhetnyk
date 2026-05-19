@@ -1,8 +1,6 @@
 from decimal import Decimal
 from unittest.mock import AsyncMock, patch
 
-import pytest
-
 from src.bot.handlers.history import handle_history
 from src.db.repositories.category_repo import CategoryRepository
 from src.db.repositories.expense_repo import ExpenseRepository
@@ -14,7 +12,9 @@ async def _setup_db(db_factory, telegram_id: int = 910001):
         cat_repo = CategoryRepository(session)
         await cat_repo.seed_system_categories_if_empty()
         user_repo = UserRepository(session)
-        user, _ = await user_repo.get_or_create(telegram_id=telegram_id, username="histuser")
+        user, _ = await user_repo.get_or_create(
+            telegram_id=telegram_id, username="histuser"
+        )
         await session.commit()
         return user
 

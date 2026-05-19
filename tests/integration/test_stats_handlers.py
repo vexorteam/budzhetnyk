@@ -13,12 +13,16 @@ async def _setup_db(db_factory):
         cat_repo = CategoryRepository(session)
         await cat_repo.seed_system_categories_if_empty()
         user_repo = UserRepository(session)
-        user, _ = await user_repo.get_or_create(telegram_id=800001, username="statshandler")
+        user, _ = await user_repo.get_or_create(
+            telegram_id=800001, username="statshandler"
+        )
         await session.commit()
         return user
 
 
-async def _create_expense(db_factory, user_id: int, amount: float, system_code: str = "food"):
+async def _create_expense(
+    db_factory, user_id: int, amount: float, system_code: str = "food"
+):
     from sqlalchemy import select
 
     async with db_factory() as session:

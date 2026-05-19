@@ -4,7 +4,6 @@ from aiogram.types import Message
 from sqlalchemy.orm import selectinload
 
 from src.db.models import Expense, User
-from src.db.repositories.expense_repo import ExpenseRepository
 from src.db.session import get_session_factory
 from src.utils.formatters import format_expense_line
 
@@ -27,7 +26,9 @@ async def handle_history(message: Message, user: User) -> None:
         expenses = list(result.scalars().all())
 
     if not expenses:
-        await message.answer("Витрат ще немає. Додайте першу: наприклад, <code>Кава 50</code>")
+        await message.answer(
+            "Витрат ще немає. Додайте першу: наприклад, <code>Кава 50</code>"
+        )
         return
 
     lines = ["📋 <b>Останні витрати:</b>", ""]

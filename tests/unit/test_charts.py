@@ -51,9 +51,7 @@ def test_pie_chart_empty_stats_raises():
 
 
 def test_pie_chart_single_category():
-    stats = _make_stats(
-        [CategoryStat(1, "Їжа", "🍔", Decimal("1000"), Decimal("100"))]
-    )
+    stats = _make_stats([CategoryStat(1, "Їжа", "🍔", Decimal("1000"), Decimal("100"))])
     result = build_pie_chart(stats)
     assert isinstance(result, io.BytesIO)
     assert len(result.read()) > 100
@@ -108,8 +106,7 @@ def test_bar_chart_single_expense():
 
 def test_bar_chart_many_days():
     expenses = [
-        _make_expense(Decimal("50"), datetime(2026, 5, d, 12, 0))
-        for d in range(1, 29)
+        _make_expense(Decimal("50"), datetime(2026, 5, d, 12, 0)) for d in range(1, 29)
     ]
     result = build_daily_bar_chart(expenses, "month")
     assert isinstance(result, io.BytesIO)

@@ -15,12 +15,16 @@ async def _setup_db(db_factory, telegram_id: int = 900001):
         cat_repo = CategoryRepository(session)
         await cat_repo.seed_system_categories_if_empty()
         user_repo = UserRepository(session)
-        user, _ = await user_repo.get_or_create(telegram_id=telegram_id, username="undouser")
+        user, _ = await user_repo.get_or_create(
+            telegram_id=telegram_id, username="undouser"
+        )
         await session.commit()
         return user
 
 
-async def _add_expense(db_factory, user_id: int, amount: str, description: str | None = "Кава"):
+async def _add_expense(
+    db_factory, user_id: int, amount: str, description: str | None = "Кава"
+):
     async with db_factory() as session:
         cat_repo = CategoryRepository(session)
         cats = await cat_repo.get_system_categories()

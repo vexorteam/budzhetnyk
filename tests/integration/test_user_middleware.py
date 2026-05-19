@@ -2,11 +2,9 @@
 Integration tests for UserMiddleware and user get_or_create flow.
 Tests use a real in-memory SQLite database.
 """
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock
 
-import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any
+from unittest.mock import MagicMock
 
 from src.bot.middlewares.user import UserMiddleware
 from src.db.models import User

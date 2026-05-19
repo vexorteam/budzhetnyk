@@ -205,20 +205,22 @@ async def test_get_month_total_empty(db_session, user_and_category):
 
 async def test_get_month_total_sums_correctly(db_session, user_and_category):
     user, category = user_and_category
-    db_session.add_all([
-        Expense(
-            user_id=user.id,
-            category_id=category.id,
-            amount=Decimal("100"),
-            created_at=datetime(2026, 5, 10, 12, 0),
-        ),
-        Expense(
-            user_id=user.id,
-            category_id=category.id,
-            amount=Decimal("250"),
-            created_at=datetime(2026, 5, 20, 12, 0),
-        ),
-    ])
+    db_session.add_all(
+        [
+            Expense(
+                user_id=user.id,
+                category_id=category.id,
+                amount=Decimal("100"),
+                created_at=datetime(2026, 5, 10, 12, 0),
+            ),
+            Expense(
+                user_id=user.id,
+                category_id=category.id,
+                amount=Decimal("250"),
+                created_at=datetime(2026, 5, 20, 12, 0),
+            ),
+        ]
+    )
     await db_session.flush()
     repo = ExpenseRepository(db_session)
     total = await repo.get_month_total(user.id, 2026, 5)
@@ -227,20 +229,22 @@ async def test_get_month_total_sums_correctly(db_session, user_and_category):
 
 async def test_get_month_total_excludes_other_months(db_session, user_and_category):
     user, category = user_and_category
-    db_session.add_all([
-        Expense(
-            user_id=user.id,
-            category_id=category.id,
-            amount=Decimal("100"),
-            created_at=datetime(2026, 5, 15, 12, 0),
-        ),
-        Expense(
-            user_id=user.id,
-            category_id=category.id,
-            amount=Decimal("200"),
-            created_at=datetime(2026, 4, 15, 12, 0),
-        ),
-    ])
+    db_session.add_all(
+        [
+            Expense(
+                user_id=user.id,
+                category_id=category.id,
+                amount=Decimal("100"),
+                created_at=datetime(2026, 5, 15, 12, 0),
+            ),
+            Expense(
+                user_id=user.id,
+                category_id=category.id,
+                amount=Decimal("200"),
+                created_at=datetime(2026, 4, 15, 12, 0),
+            ),
+        ]
+    )
     await db_session.flush()
     repo = ExpenseRepository(db_session)
     total = await repo.get_month_total(user.id, 2026, 5)
@@ -249,20 +253,22 @@ async def test_get_month_total_excludes_other_months(db_session, user_and_catego
 
 async def test_get_month_total_december_boundary(db_session, user_and_category):
     user, category = user_and_category
-    db_session.add_all([
-        Expense(
-            user_id=user.id,
-            category_id=category.id,
-            amount=Decimal("300"),
-            created_at=datetime(2026, 12, 15, 12, 0),
-        ),
-        Expense(
-            user_id=user.id,
-            category_id=category.id,
-            amount=Decimal("400"),
-            created_at=datetime(2027, 1, 1, 12, 0),
-        ),
-    ])
+    db_session.add_all(
+        [
+            Expense(
+                user_id=user.id,
+                category_id=category.id,
+                amount=Decimal("300"),
+                created_at=datetime(2026, 12, 15, 12, 0),
+            ),
+            Expense(
+                user_id=user.id,
+                category_id=category.id,
+                amount=Decimal("400"),
+                created_at=datetime(2027, 1, 1, 12, 0),
+            ),
+        ]
+    )
     await db_session.flush()
     repo = ExpenseRepository(db_session)
     total = await repo.get_month_total(user.id, 2026, 12)

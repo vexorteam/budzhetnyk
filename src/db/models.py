@@ -23,9 +23,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     username: Mapped[str | None] = mapped_column(Text, nullable=True)
-    monthly_limit: Mapped[Decimal | None] = mapped_column(
-        NUMERIC(10, 2), nullable=True
-    )
+    monthly_limit: Mapped[Decimal | None] = mapped_column(NUMERIC(10, 2), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         default=func.now(), server_default=func.now(), nullable=False
     )

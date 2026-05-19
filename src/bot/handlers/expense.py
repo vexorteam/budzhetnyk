@@ -31,12 +31,8 @@ def _limit_warning(amount_after: Decimal, limit: Decimal | None) -> str:
         return ""
     pct = (amount_after / limit * Decimal("100")).quantize(Decimal("1"))
     if status == "100":
-        return (
-            f"\n🚨 Ліміт перевищено — {format_amount(amount_after)} / {format_amount(limit)} ({pct}%)"
-        )
-    return (
-        f"\n⚠️ Витрачено {pct}% місячного ліміту ({format_amount(amount_after)} / {format_amount(limit)})"
-    )
+        return f"\n🚨 Ліміт перевищено — {format_amount(amount_after)} / {format_amount(limit)} ({pct}%)"
+    return f"\n⚠️ Витрачено {pct}% місячного ліміту ({format_amount(amount_after)} / {format_amount(limit)})"
 
 
 @router.message(F.text, ~F.text.startswith("/"))
@@ -48,6 +44,9 @@ async def handle_expense(message: Message, user: User, state: FSMContext) -> Non
     except ExpenseParsingError:
         await message.answer("Не зрозумів 🤔 Спробуйте: <code>Кава 50</code>")
         return
+
+    if parsed.description and len(parsed.description) > 500:
+        parsed.description = parsed.description[:500]
 
     monthly_limit = user.monthly_limit
     factory = get_session_factory()
@@ -66,13 +65,17 @@ async def handle_expense(message: Message, user: User, state: FSMContext) -> Non
             amount_after = Decimal("0")
             if monthly_limit:
                 now_dt = _utcnow()
-                amount_after = await repo.get_month_total(user.id, now_dt.year, now_dt.month)
+                amount_after = await repo.get_month_total(
+                    user.id, now_dt.year, now_dt.month
+                )
 
             await session.commit()
 
             amount_str = format_amount(parsed.amount)
             desc_part = f" · {parsed.description}" if parsed.description else ""
-            reply = f"✅ Додано: {amount_str} · {category.emoji} {category.name}{desc_part}"
+            reply = (
+                f"✅ Додано: {amount_str} · {category.emoji} {category.name}{desc_part}"
+            )
             reply += _limit_warning(amount_after, monthly_limit)
             await message.answer(reply)
             return
@@ -133,7 +136,9 @@ async def handle_category_callback(
 
         if monthly_limit:
             now_dt = _utcnow()
-            amount_after = await repo.get_month_total(user.id, now_dt.year, now_dt.month)
+            amount_after = await repo.get_month_total(
+                user.id, now_dt.year, now_dt.month
+            )
 
         if description and category.system_code:
             try:

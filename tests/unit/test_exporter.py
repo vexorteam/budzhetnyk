@@ -122,9 +122,15 @@ async def test_build_excel_sorted_by_date(db_session):
 
 async def test_build_excel_excludes_other_months(db_session):
     user, cat = await _seed_user_and_category(db_session)
-    await _add_expense(db_session, user.id, cat.id, 100, "Квітень", datetime(2026, 4, 15))
-    await _add_expense(db_session, user.id, cat.id, 200, "Травень", datetime(2026, 5, 10))
-    await _add_expense(db_session, user.id, cat.id, 300, "Червень", datetime(2026, 6, 1))
+    await _add_expense(
+        db_session, user.id, cat.id, 100, "Квітень", datetime(2026, 4, 15)
+    )
+    await _add_expense(
+        db_session, user.id, cat.id, 200, "Травень", datetime(2026, 5, 10)
+    )
+    await _add_expense(
+        db_session, user.id, cat.id, 300, "Червень", datetime(2026, 6, 1)
+    )
     buf = await build_excel(user.id, 2026, 5, db_session)
     wb = openpyxl.load_workbook(buf)
     ws = wb.active
@@ -135,7 +141,9 @@ async def test_build_excel_excludes_other_months(db_session):
 
 async def test_build_excel_december_wraps_year(db_session):
     user, cat = await _seed_user_and_category(db_session)
-    await _add_expense(db_session, user.id, cat.id, 500, "Грудень", datetime(2026, 12, 25))
+    await _add_expense(
+        db_session, user.id, cat.id, 500, "Грудень", datetime(2026, 12, 25)
+    )
     buf = await build_excel(user.id, 2026, 12, db_session)
     wb = openpyxl.load_workbook(buf)
     ws = wb.active

@@ -30,11 +30,15 @@ def _build_undo_keyboard(expense_id: int) -> InlineKeyboardMarkup:
             [
                 InlineKeyboardButton(
                     text="Так, видалити",
-                    callback_data=UndoCallback(action="confirm", expense_id=expense_id).pack(),
+                    callback_data=UndoCallback(
+                        action="confirm", expense_id=expense_id
+                    ).pack(),
                 ),
                 InlineKeyboardButton(
                     text="Скасувати",
-                    callback_data=UndoCallback(action="cancel", expense_id=expense_id).pack(),
+                    callback_data=UndoCallback(
+                        action="cancel", expense_id=expense_id
+                    ).pack(),
                 ),
             ]
         ]

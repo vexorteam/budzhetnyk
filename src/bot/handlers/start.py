@@ -36,8 +36,7 @@ async def cmd_start(message: Message, user: User) -> None:
     await message.answer(
         f"Привіт, {name}! 👋\n\n"
         "Я допоможу вести облік витрат прямо в Telegram.\n"
-        "Просто напиши <code>Кава 50</code> — і я все збережу.\n\n"
-        + _HELP_TEXT
+        "Просто напиши <code>Кава 50</code> — і я все збережу.\n\n" + _HELP_TEXT
     )
 
 

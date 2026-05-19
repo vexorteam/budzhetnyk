@@ -52,9 +52,7 @@ async def handle_export(
         try:
             buf = await build_excel(user.id, year, month, session)
         except NoDataForExportError:
-            await message.answer(
-                f"Немає даних за {year}-{month:02d} 📭"
-            )
+            await message.answer(f"Немає даних за {year}-{month:02d} 📭")
             return
 
     filename = f"expenses_{year}-{month:02d}.xlsx"

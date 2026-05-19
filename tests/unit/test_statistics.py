@@ -8,8 +8,6 @@ from src.db.repositories.category_repo import CategoryRepository
 from src.db.repositories.user_repo import UserRepository
 from src.exceptions import InvalidPeriodError
 from src.services.statistics import (
-    CategoryStat,
-    PeriodStats,
     get_limit_status,
     get_period_stats,
 )

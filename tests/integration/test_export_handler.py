@@ -1,8 +1,6 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
-
-import pytest
 
 from src.bot.handlers.export import handle_export
 from src.db.models import Category, Expense
@@ -21,7 +19,6 @@ async def _setup_db(db_factory):
 
 
 async def _add_expense(db_factory, user_id: int, amount: float, created_at: datetime):
-    from sqlalchemy import select
 
     async with db_factory() as session:
         result = await session.execute(
@@ -52,9 +49,7 @@ async def test_export_no_data_returns_friendly_message(db_factory):
     message = AsyncMock()
 
     with patch("src.bot.handlers.export.get_session_factory", return_value=db_factory):
-        with patch(
-            "src.bot.handlers.export.datetime"
-        ) as mock_dt:
+        with patch("src.bot.handlers.export.datetime") as mock_dt:
             mock_now = MagicMock()
             mock_now.year = 2026
             mock_now.month = 5

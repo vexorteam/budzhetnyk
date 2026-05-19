@@ -19,9 +19,7 @@ def build_pie_chart(stats: PeriodStats) -> io.BytesIO:
         raise NoDataForChartError()
 
     try:
-        labels = [
-            f"{cs.name}\n{cs.percent}%" for cs in stats.by_category
-        ]
+        labels = [f"{cs.name}\n{cs.percent}%" for cs in stats.by_category]
         sizes = [float(cs.total) for cs in stats.by_category]
 
         fig, ax = plt.subplots(figsize=(8, 6))

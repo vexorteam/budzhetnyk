@@ -135,7 +135,9 @@ async def test_category_selection_and_learning(db_factory):
         # Personal copy of education should have "абажур" in keywords
         cat_repo = CategoryRepository(session)
         user_cats = await cat_repo.get_user_categories(user.id)
-        edu_user_cat = next((c for c in user_cats if c.system_code == "education"), None)
+        edu_user_cat = next(
+            (c for c in user_cats if c.system_code == "education"), None
+        )
         assert edu_user_cat is not None
         keywords = json.loads(edu_user_cat.keywords)
         assert "абажур" in keywords
@@ -244,3 +246,29 @@ async def test_number_only_shows_keyboard_no_keyword_added(db_factory):
     # No 🧠 note in the reply
     reply = callback.message.edit_text.call_args[0][0]
     assert "🧠" not in reply
+
+
+async def test_long_description_truncated_to_500(db_factory):
+    """Description longer than 500 chars should be silently truncated."""
+    user = await _setup_db(db_factory)
+    state = _make_fsm_context()
+
+    long_desc = "А" * 600
+    message = AsyncMock()
+    message.text = f"{long_desc} 99"
+
+    with patch("src.bot.handlers.expense.get_session_factory", return_value=db_factory):
+        await handle_expense(message, user, state)
+
+    async with db_factory() as session:
+        repo = ExpenseRepository(session)
+        expense = await repo.get_last_for_user(user.id)
+
+    # Should still show keyboard (long nonsense not in keywords), but description is saved
+    # Either auto-saved or pending — check that FSM data description is ≤ 500
+    fsm_data = await state.get_data()
+    pending_desc = fsm_data.get("pending_description")
+    if pending_desc is not None:
+        assert len(pending_desc) <= 500
+    elif expense is not None:
+        assert expense.description is None or len(expense.description) <= 500

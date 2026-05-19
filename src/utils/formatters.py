@@ -56,7 +56,9 @@ def format_stats(stats: PeriodStats, monthly_limit: Decimal | None = None) -> st
 
     lines.append("")
     for cs in stats.by_category:
-        lines.append(f"{cs.emoji} {cs.name} — {format_amount(cs.total)} ({format_percent(cs.percent)})")
+        lines.append(
+            f"{cs.emoji} {cs.name} — {format_amount(cs.total)} ({format_percent(cs.percent)})"
+        )
 
     if stats.top_expenses:
         lines.append("")

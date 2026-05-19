@@ -1,6 +1,5 @@
 import json
 
-import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models import Category, User
@@ -71,7 +70,9 @@ async def test_get_user_categories_empty(db_session: AsyncSession):
     assert cats == []
 
 
-async def test_get_user_categories_returns_only_user_categories(db_session: AsyncSession):
+async def test_get_user_categories_returns_only_user_categories(
+    db_session: AsyncSession,
+):
     user = User(telegram_id=500001, username="eve")
     db_session.add(user)
     await db_session.flush()

@@ -128,11 +128,7 @@ async def test_user_expenses_relationship(session: AsyncSession):
     from sqlalchemy import select
     from sqlalchemy.orm import selectinload
 
-    stmt = (
-        select(User)
-        .where(User.id == user.id)
-        .options(selectinload(User.expenses))
-    )
+    stmt = select(User).where(User.id == user.id).options(selectinload(User.expenses))
     result = await session.execute(stmt)
     loaded_user = result.scalar_one()
 

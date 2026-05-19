@@ -16,7 +16,9 @@ async def _setup_db(db_factory, telegram_id: int = 800001):
         cat_repo = CategoryRepository(session)
         await cat_repo.seed_system_categories_if_empty()
         user_repo = UserRepository(session)
-        user, _ = await user_repo.get_or_create(telegram_id=telegram_id, username="limituser")
+        user, _ = await user_repo.get_or_create(
+            telegram_id=telegram_id, username="limituser"
+        )
         await session.commit()
         return user
 
@@ -175,7 +177,9 @@ async def test_expense_warns_repeatedly_above_80(db_factory):
         state = _make_fsm(user_id=800006)
         msg = AsyncMock()
         msg.text = f"Кава {amount}"
-        with patch("src.bot.handlers.expense.get_session_factory", return_value=db_factory):
+        with patch(
+            "src.bot.handlers.expense.get_session_factory", return_value=db_factory
+        ):
             await handle_expense(msg, user, state)
         reply = msg.answer.call_args[0][0]
         assert "⚠️" in reply or "🚨" in reply, f"Expected warning on expense #{i}"

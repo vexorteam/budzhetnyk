@@ -130,7 +130,9 @@ async def test_add_keyword_creates_personal_copy(db_session: AsyncSession):
     await _seed(db_session)
     user = await _make_user(db_session)
 
-    cat = await add_keyword_to_user_category(user.id, "education", "курсера", db_session)
+    cat = await add_keyword_to_user_category(
+        user.id, "education", "курсера", db_session
+    )
 
     assert cat.user_id == user.id
     assert cat.system_code == "education"
@@ -138,11 +140,15 @@ async def test_add_keyword_creates_personal_copy(db_session: AsyncSession):
     assert "курсера" in keywords
 
 
-async def test_add_keyword_personal_copy_includes_system_keywords(db_session: AsyncSession):
+async def test_add_keyword_personal_copy_includes_system_keywords(
+    db_session: AsyncSession,
+):
     await _seed(db_session)
     user = await _make_user(db_session)
 
-    cat = await add_keyword_to_user_category(user.id, "education", "курсера", db_session)
+    cat = await add_keyword_to_user_category(
+        user.id, "education", "курсера", db_session
+    )
 
     keywords = json.loads(cat.keywords)
     assert "coursera" in keywords
@@ -166,7 +172,9 @@ async def test_add_keyword_no_duplicates(db_session: AsyncSession):
     user = await _make_user(db_session)
 
     await add_keyword_to_user_category(user.id, "education", "курсера", db_session)
-    cat = await add_keyword_to_user_category(user.id, "education", "курсера", db_session)
+    cat = await add_keyword_to_user_category(
+        user.id, "education", "курсера", db_session
+    )
 
     keywords = json.loads(cat.keywords)
     assert keywords.count("курсера") == 1
@@ -176,7 +184,9 @@ async def test_add_keyword_normalizes_to_lowercase(db_session: AsyncSession):
     await _seed(db_session)
     user = await _make_user(db_session)
 
-    cat = await add_keyword_to_user_category(user.id, "education", "Курсера", db_session)
+    cat = await add_keyword_to_user_category(
+        user.id, "education", "Курсера", db_session
+    )
 
     keywords = json.loads(cat.keywords)
     assert "курсера" in keywords

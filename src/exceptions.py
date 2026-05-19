@@ -50,3 +50,19 @@ class ChartGenerationError(ExpenseBotError):
 class NoDataForChartError(ExpenseBotError):
     def __init__(self) -> None:
         super().__init__("No data available for chart")
+
+
+class ExportError(ExpenseBotError):
+    def __init__(self, detail: str = "") -> None:
+        msg = "Export failed"
+        if detail:
+            msg = f"{msg}: {detail}"
+        super().__init__(msg)
+        self.detail = detail
+
+
+class NoDataForExportError(ExpenseBotError):
+    def __init__(self, year: int, month: int) -> None:
+        super().__init__(f"No data for export: {year}-{month:02d}")
+        self.year = year
+        self.month = month

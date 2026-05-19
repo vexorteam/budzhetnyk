@@ -149,6 +149,53 @@ async def test_get_period_expenses_multiple_sorted(db_session, user_and_category
     assert e2.id in ids
 
 
+async def test_delete_expense_removes_record(db_session, user_and_category):
+    user, category = user_and_category
+    repo = ExpenseRepository(db_session)
+    expense = await repo.create(
+        user_id=user.id,
+        category_id=category.id,
+        amount=Decimal("75.00"),
+        description="Тест видалення",
+    )
+    expense_id = expense.id
+
+    await repo.delete(expense_id)
+    await db_session.flush()
+
+    last = await repo.get_last_for_user(user.id)
+    assert last is None
+
+
+async def test_delete_nonexistent_expense_no_error(db_session, user_and_category):
+    repo = ExpenseRepository(db_session)
+    await repo.delete(99999)
+
+
+async def test_delete_removes_only_specified_expense(db_session, user_and_category):
+    user, category = user_and_category
+    repo = ExpenseRepository(db_session)
+    e1 = await repo.create(
+        user_id=user.id,
+        category_id=category.id,
+        amount=Decimal("10.00"),
+        description="Перша",
+    )
+    e2 = await repo.create(
+        user_id=user.id,
+        category_id=category.id,
+        amount=Decimal("20.00"),
+        description="Друга",
+    )
+
+    await repo.delete(e1.id)
+    await db_session.flush()
+
+    last = await repo.get_last_for_user(user.id)
+    assert last is not None
+    assert last.id == e2.id
+
+
 async def test_get_month_total_empty(db_session, user_and_category):
     user, _ = user_and_category
     repo = ExpenseRepository(db_session)

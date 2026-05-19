@@ -127,7 +127,7 @@ async def test_limit_invalid_text(db_factory):
 
 
 async def test_expense_warns_at_80_percent(db_factory):
-    """Expense that crosses 80% threshold triggers a warning."""
+    """Expense that brings total to ≥80% triggers a warning."""
     user = await _setup_db(db_factory, telegram_id=800002)
 
     async with db_factory() as session:
@@ -136,7 +136,7 @@ async def test_expense_warns_at_80_percent(db_factory):
         await session.commit()
     user.monthly_limit = Decimal("1000")
 
-    # Add expense of 799 grn — still below 80% (79.9%)
+    # Add expense of 799 grn — 79.9%, no warning
     state = _make_fsm(user_id=800002)
     msg1 = AsyncMock()
     msg1.text = "Кава 799"
@@ -148,7 +148,7 @@ async def test_expense_warns_at_80_percent(db_factory):
     assert "⚠️" not in reply1
     assert "🚨" not in reply1
 
-    # Add expense of 2 grn — total = 801, crosses 80%
+    # Add expense of 2 grn — total = 801 grn (80.1%) → warning
     state2 = _make_fsm(user_id=800002)
     msg2 = AsyncMock()
     msg2.text = "Кава 2"
@@ -158,12 +158,31 @@ async def test_expense_warns_at_80_percent(db_factory):
 
     reply2 = msg2.answer.call_args[0][0]
     assert "⚠️" in reply2
-    assert "80%" in reply2
     assert "1 000 грн" in reply2
 
 
+async def test_expense_warns_repeatedly_above_80(db_factory):
+    """Every subsequent expense while total ≥80% (but <100%) shows a warning."""
+    user = await _setup_db(db_factory, telegram_id=800006)
+
+    async with db_factory() as session:
+        repo = UserRepository(session)
+        await repo.set_monthly_limit(user.id, Decimal("1000"))
+        await session.commit()
+    user.monthly_limit = Decimal("1000")
+
+    for i, amount in enumerate(["810", "50", "30"], start=1):
+        state = _make_fsm(user_id=800006)
+        msg = AsyncMock()
+        msg.text = f"Кава {amount}"
+        with patch("src.bot.handlers.expense.get_session_factory", return_value=db_factory):
+            await handle_expense(msg, user, state)
+        reply = msg.answer.call_args[0][0]
+        assert "⚠️" in reply or "🚨" in reply, f"Expected warning on expense #{i}"
+
+
 async def test_expense_warns_at_100_percent(db_factory):
-    """Expense that crosses 100% threshold triggers a critical warning."""
+    """Expense that brings total to ≥100% triggers a critical warning."""
     user = await _setup_db(db_factory, telegram_id=800003)
 
     async with db_factory() as session:
@@ -172,7 +191,7 @@ async def test_expense_warns_at_100_percent(db_factory):
         await session.commit()
     user.monthly_limit = Decimal("500")
 
-    # Add expense of 490 — 98%, no warning
+    # Add expense of 490 — 98% → ⚠️ (≥80% warning)
     state = _make_fsm(user_id=800003)
     msg1 = AsyncMock()
     msg1.text = "Оренда 490"
@@ -181,9 +200,10 @@ async def test_expense_warns_at_100_percent(db_factory):
         await handle_expense(msg1, user, state)
 
     reply1 = msg1.answer.call_args[0][0]
+    assert "⚠️" in reply1
     assert "🚨" not in reply1
 
-    # Add expense of 11 — total = 501, crosses 100%
+    # Add expense of 11 — total = 501 (100.2%) → 🚨
     state2 = _make_fsm(user_id=800003)
     msg2 = AsyncMock()
     msg2.text = "Кава 11"
@@ -212,8 +232,8 @@ async def test_expense_no_warning_without_limit(db_factory):
     assert "🚨" not in reply
 
 
-async def test_expense_no_double_warning_after_80(db_factory):
-    """After crossing 80%, subsequent expenses below 100% give no further warnings."""
+async def test_expense_shows_current_percent_in_warning(db_factory):
+    """Warning message contains the actual current percentage, not a fixed '80%'."""
     user = await _setup_db(db_factory, telegram_id=800005)
 
     async with db_factory() as session:
@@ -222,25 +242,13 @@ async def test_expense_no_double_warning_after_80(db_factory):
         await session.commit()
     user.monthly_limit = Decimal("1000")
 
-    # First expense crosses 80%
     state = _make_fsm(user_id=800005)
-    msg1 = AsyncMock()
-    msg1.text = "Кава 810"
+    msg = AsyncMock()
+    msg.text = "Кава 900"  # 90% of limit
 
     with patch("src.bot.handlers.expense.get_session_factory", return_value=db_factory):
-        await handle_expense(msg1, user, state)
+        await handle_expense(msg, user, state)
 
-    reply1 = msg1.answer.call_args[0][0]
-    assert "⚠️" in reply1
-
-    # Second expense: already above 80% (900 total), no new crossing
-    state2 = _make_fsm(user_id=800005)
-    msg2 = AsyncMock()
-    msg2.text = "Кава 90"
-
-    with patch("src.bot.handlers.expense.get_session_factory", return_value=db_factory):
-        await handle_expense(msg2, user, state2)
-
-    reply2 = msg2.answer.call_args[0][0]
-    assert "⚠️" not in reply2
-    assert "🚨" not in reply2
+    reply = msg.answer.call_args[0][0]
+    assert "⚠️" in reply
+    assert "90%" in reply

@@ -54,6 +54,13 @@ class ExpenseRepository:
         )
         return list(result.scalars().all())
 
+    async def delete(self, expense_id: int) -> None:
+        result = await self._session.execute(select(Expense).where(Expense.id == expense_id))
+        expense = result.scalars().first()
+        if expense is not None:
+            await self._session.delete(expense)
+            await self._session.flush()
+
     async def get_month_total(self, user_id: int, year: int, month: int) -> Decimal:
         date_from = datetime(year, month, 1)
         date_to = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)

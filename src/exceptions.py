@@ -72,3 +72,8 @@ class InvalidLimitError(ExpenseBotError):
     def __init__(self, value: str) -> None:
         super().__init__(f"Invalid limit value: {value!r}")
         self.value = value
+
+
+class NoExpenseToUndoError(ExpenseBotError):
+    def __init__(self) -> None:
+        super().__init__("No expenses to undo")

@@ -11,6 +11,7 @@ from src.bot.handlers import export as export_handler
 from src.bot.handlers import limit as limit_handler
 from src.bot.handlers import start as start_handler
 from src.bot.handlers import stats as stats_handler
+from src.bot.handlers import undo as undo_handler
 from src.bot.middlewares.user import UserMiddleware
 from src.config import get_settings
 from src.db.repositories.category_repo import CategoryRepository
@@ -55,6 +56,7 @@ async def main() -> None:
     dp.include_router(stats_handler.router)
     dp.include_router(export_handler.router)
     dp.include_router(limit_handler.router)
+    dp.include_router(undo_handler.router)
     dp.include_router(expense_handler.router)
 
     await _seed_categories()

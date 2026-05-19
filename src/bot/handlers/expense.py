@@ -15,7 +15,7 @@ from src.db.session import get_session_factory
 from src.exceptions import ExpenseParsingError, InvalidKeywordError
 from src.services.categorizer import add_keyword_to_user_category, guess_category
 from src.services.parser import parse_expense
-from src.services.statistics import check_limit_threshold_crossed
+from src.services.statistics import get_limit_status
 from src.utils.formatters import format_amount
 
 router = Router(name="expense")
@@ -25,19 +25,18 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-def _limit_warning(
-    amount_before: Decimal, amount_after: Decimal, limit: Decimal | None
-) -> str:
-    threshold = check_limit_threshold_crossed(amount_before, amount_after, limit)
-    if threshold == "100":
+def _limit_warning(amount_after: Decimal, limit: Decimal | None) -> str:
+    status = get_limit_status(amount_after, limit)
+    if status is None:
+        return ""
+    pct = (amount_after / limit * Decimal("100")).quantize(Decimal("1"))
+    if status == "100":
         return (
-            f"\n🚨 Ліміт перевищено ({format_amount(amount_after)} / {format_amount(limit)})"
+            f"\n🚨 Ліміт перевищено — {format_amount(amount_after)} / {format_amount(limit)} ({pct}%)"
         )
-    if threshold == "80":
-        return (
-            f"\n⚠️ Ви витратили 80% ліміту ({format_amount(amount_after)} / {format_amount(limit)})"
-        )
-    return ""
+    return (
+        f"\n⚠️ Витрачено {pct}% місячного ліміту ({format_amount(amount_after)} / {format_amount(limit)})"
+    )
 
 
 @router.message(F.text, ~F.text.startswith("/"))
@@ -57,24 +56,24 @@ async def handle_expense(message: Message, user: User, state: FSMContext) -> Non
 
         if category is not None:
             repo = ExpenseRepository(session)
-
-            amount_before = Decimal("0")
-            if monthly_limit:
-                now_dt = _utcnow()
-                amount_before = await repo.get_month_total(user.id, now_dt.year, now_dt.month)
-
             await repo.create(
                 user_id=user.id,
                 category_id=category.id,
                 amount=parsed.amount,
                 description=parsed.description,
             )
+
+            amount_after = Decimal("0")
+            if monthly_limit:
+                now_dt = _utcnow()
+                amount_after = await repo.get_month_total(user.id, now_dt.year, now_dt.month)
+
             await session.commit()
 
             amount_str = format_amount(parsed.amount)
             desc_part = f" · {parsed.description}" if parsed.description else ""
             reply = f"✅ Додано: {amount_str} · {category.emoji} {category.name}{desc_part}"
-            reply += _limit_warning(amount_before, amount_before + parsed.amount, monthly_limit)
+            reply += _limit_warning(amount_after, monthly_limit)
             await message.answer(reply)
             return
 
@@ -110,7 +109,7 @@ async def handle_category_callback(
     await state.clear()
 
     monthly_limit = user.monthly_limit
-    amount_before = Decimal("0")
+    amount_after = Decimal("0")
     keyword_added = False
 
     factory = get_session_factory()
@@ -125,17 +124,16 @@ async def handle_category_callback(
             return
 
         repo = ExpenseRepository(session)
-
-        if monthly_limit:
-            now_dt = _utcnow()
-            amount_before = await repo.get_month_total(user.id, now_dt.year, now_dt.month)
-
         await repo.create(
             user_id=user.id,
             category_id=category.id,
             amount=amount,
             description=description,
         )
+
+        if monthly_limit:
+            now_dt = _utcnow()
+            amount_after = await repo.get_month_total(user.id, now_dt.year, now_dt.month)
 
         if description and category.system_code:
             try:
@@ -156,7 +154,7 @@ async def handle_category_callback(
     reply = f"✅ Додано: {amount_str} · {category.emoji} {category.name}{desc_part}"
     if keyword_added:
         reply += f"\n🧠 Запам'ятав «{description}» для категорії {category.name}"
-    reply += _limit_warning(amount_before, amount_before + amount, monthly_limit)
+    reply += _limit_warning(amount_after, monthly_limit)
 
     await callback.message.edit_text(reply)
     await callback.answer()

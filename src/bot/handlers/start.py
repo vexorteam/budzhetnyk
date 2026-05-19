@@ -2,6 +2,8 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
+from src.db.models import User
+
 router = Router(name="start")
 
 _HELP_TEXT = (
@@ -29,7 +31,7 @@ _HELP_TEXT = (
 
 
 @router.message(Command("start"))
-async def cmd_start(message: Message) -> None:
+async def cmd_start(message: Message, user: User) -> None:
     name = message.from_user.first_name if message.from_user else "друже"
     await message.answer(
         f"Привіт, {name}! 👋\n\n"
@@ -40,5 +42,5 @@ async def cmd_start(message: Message) -> None:
 
 
 @router.message(Command("help"))
-async def cmd_help(message: Message) -> None:
+async def cmd_help(message: Message, user: User) -> None:
     await message.answer(_HELP_TEXT)

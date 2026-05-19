@@ -7,7 +7,10 @@ from aiogram.enums import ParseMode
 from loguru import logger
 
 from src.bot.handlers import start as start_handler
+from src.bot.middlewares.user import UserMiddleware
 from src.config import get_settings
+from src.db.repositories.category_repo import CategoryRepository
+from src.db.session import get_session_factory
 
 
 def _setup_logging(log_level: str) -> None:
@@ -25,6 +28,14 @@ def _setup_logging(log_level: str) -> None:
     )
 
 
+async def _seed_categories() -> None:
+    factory = get_session_factory()
+    async with factory() as session:
+        repo = CategoryRepository(session)
+        await repo.seed_system_categories_if_empty()
+        await session.commit()
+
+
 async def main() -> None:
     settings = get_settings()
     _setup_logging(settings.log_level)
@@ -35,7 +46,11 @@ async def main() -> None:
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
     dp = Dispatcher()
+    dp.update.middleware(UserMiddleware())
     dp.include_router(start_handler.router)
+
+    await _seed_categories()
+    logger.info("System categories seeded")
 
     logger.info("Polling started")
     try:

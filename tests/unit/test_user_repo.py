@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -68,3 +70,30 @@ async def test_get_or_create_idempotent_on_same_session(db_session: AsyncSession
 
     assert created is False
     assert user_a.telegram_id == user_b.telegram_id
+
+
+async def test_set_monthly_limit(db_session: AsyncSession):
+    repo = UserRepository(db_session)
+    user = await repo.create(telegram_id=300001, username="limittest")
+    await db_session.commit()
+
+    await repo.set_monthly_limit(user.id, Decimal("10000"))
+    await db_session.commit()
+
+    found = await repo.get_by_telegram_id(300001)
+    assert found.monthly_limit == Decimal("10000")
+
+
+async def test_set_monthly_limit_to_none(db_session: AsyncSession):
+    repo = UserRepository(db_session)
+    user = await repo.create(telegram_id=300002, username="limitoff")
+    await db_session.commit()
+
+    await repo.set_monthly_limit(user.id, Decimal("5000"))
+    await db_session.commit()
+
+    await repo.set_monthly_limit(user.id, None)
+    await db_session.commit()
+
+    found = await repo.get_by_telegram_id(300002)
+    assert found.monthly_limit is None

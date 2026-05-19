@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from aiogram import F, Router
@@ -14,9 +15,29 @@ from src.db.session import get_session_factory
 from src.exceptions import ExpenseParsingError, InvalidKeywordError
 from src.services.categorizer import add_keyword_to_user_category, guess_category
 from src.services.parser import parse_expense
+from src.services.statistics import check_limit_threshold_crossed
 from src.utils.formatters import format_amount
 
 router = Router(name="expense")
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def _limit_warning(
+    amount_before: Decimal, amount_after: Decimal, limit: Decimal | None
+) -> str:
+    threshold = check_limit_threshold_crossed(amount_before, amount_after, limit)
+    if threshold == "100":
+        return (
+            f"\n🚨 Ліміт перевищено ({format_amount(amount_after)} / {format_amount(limit)})"
+        )
+    if threshold == "80":
+        return (
+            f"\n⚠️ Ви витратили 80% ліміту ({format_amount(amount_after)} / {format_amount(limit)})"
+        )
+    return ""
 
 
 @router.message(F.text, ~F.text.startswith("/"))
@@ -29,12 +50,19 @@ async def handle_expense(message: Message, user: User, state: FSMContext) -> Non
         await message.answer("Не зрозумів 🤔 Спробуйте: <code>Кава 50</code>")
         return
 
+    monthly_limit = user.monthly_limit
     factory = get_session_factory()
     async with factory() as session:
         category = await guess_category(parsed.description, user.id, session)
 
         if category is not None:
             repo = ExpenseRepository(session)
+
+            amount_before = Decimal("0")
+            if monthly_limit:
+                now_dt = _utcnow()
+                amount_before = await repo.get_month_total(user.id, now_dt.year, now_dt.month)
+
             await repo.create(
                 user_id=user.id,
                 category_id=category.id,
@@ -45,9 +73,9 @@ async def handle_expense(message: Message, user: User, state: FSMContext) -> Non
 
             amount_str = format_amount(parsed.amount)
             desc_part = f" · {parsed.description}" if parsed.description else ""
-            await message.answer(
-                f"✅ Додано: {amount_str} · {category.emoji} {category.name}{desc_part}"
-            )
+            reply = f"✅ Додано: {amount_str} · {category.emoji} {category.name}{desc_part}"
+            reply += _limit_warning(amount_before, amount_before + parsed.amount, monthly_limit)
+            await message.answer(reply)
             return
 
         cat_repo = CategoryRepository(session)
@@ -81,6 +109,10 @@ async def handle_category_callback(
 
     await state.clear()
 
+    monthly_limit = user.monthly_limit
+    amount_before = Decimal("0")
+    keyword_added = False
+
     factory = get_session_factory()
     async with factory() as session:
         result = await session.execute(
@@ -93,6 +125,11 @@ async def handle_category_callback(
             return
 
         repo = ExpenseRepository(session)
+
+        if monthly_limit:
+            now_dt = _utcnow()
+            amount_before = await repo.get_month_total(user.id, now_dt.year, now_dt.month)
+
         await repo.create(
             user_id=user.id,
             category_id=category.id,
@@ -100,7 +137,6 @@ async def handle_category_callback(
             description=description,
         )
 
-        keyword_added = False
         if description and category.system_code:
             try:
                 await add_keyword_to_user_category(
@@ -120,6 +156,7 @@ async def handle_category_callback(
     reply = f"✅ Додано: {amount_str} · {category.emoji} {category.name}{desc_part}"
     if keyword_added:
         reply += f"\n🧠 Запам'ятав «{description}» для категорії {category.name}"
+    reply += _limit_warning(amount_before, amount_before + amount, monthly_limit)
 
     await callback.message.edit_text(reply)
     await callback.answer()

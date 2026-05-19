@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models import Expense
@@ -53,3 +53,16 @@ class ExpenseRepository:
             .order_by(Expense.created_at)
         )
         return list(result.scalars().all())
+
+    async def get_month_total(self, user_id: int, year: int, month: int) -> Decimal:
+        date_from = datetime(year, month, 1)
+        date_to = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
+        result = await self._session.execute(
+            select(func.sum(Expense.amount)).where(
+                Expense.user_id == user_id,
+                Expense.created_at >= date_from,
+                Expense.created_at < date_to,
+            )
+        )
+        val = result.scalar()
+        return Decimal(str(val)) if val is not None else Decimal("0")

@@ -66,3 +66,9 @@ class NoDataForExportError(ExpenseBotError):
         super().__init__(f"No data for export: {year}-{month:02d}")
         self.year = year
         self.month = month
+
+
+class InvalidLimitError(ExpenseBotError):
+    def __init__(self, value: str) -> None:
+        super().__init__(f"Invalid limit value: {value!r}")
+        self.value = value

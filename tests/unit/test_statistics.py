@@ -7,7 +7,12 @@ from src.db.models import Category, Expense
 from src.db.repositories.category_repo import CategoryRepository
 from src.db.repositories.user_repo import UserRepository
 from src.exceptions import InvalidPeriodError
-from src.services.statistics import CategoryStat, PeriodStats, get_period_stats
+from src.services.statistics import (
+    CategoryStat,
+    PeriodStats,
+    check_limit_threshold_crossed,
+    get_period_stats,
+)
 
 
 async def _setup(db_session):
@@ -328,3 +333,48 @@ async def test_top_expenses_have_category_loaded(db_session):
     assert len(stats.top_expenses) == 1
     assert stats.top_expenses[0].category.emoji == "💊"
     assert stats.top_expenses[0].description == "Аптека"
+
+
+# --- check_limit_threshold_crossed ---
+
+
+def test_limit_threshold_79_to_80():
+    threshold = check_limit_threshold_crossed(Decimal("79"), Decimal("80"), Decimal("100"))
+    assert threshold == "80"
+
+
+def test_limit_threshold_80_to_81_no_warning():
+    threshold = check_limit_threshold_crossed(Decimal("80"), Decimal("81"), Decimal("100"))
+    assert threshold is None
+
+
+def test_limit_threshold_99_to_100():
+    threshold = check_limit_threshold_crossed(Decimal("99"), Decimal("100"), Decimal("100"))
+    assert threshold == "100"
+
+
+def test_limit_threshold_100_trumps_80():
+    """One expense jumps from 0% to 110% — must report 100%, not 80%."""
+    threshold = check_limit_threshold_crossed(Decimal("0"), Decimal("110"), Decimal("100"))
+    assert threshold == "100"
+
+
+def test_limit_threshold_none_limit():
+    threshold = check_limit_threshold_crossed(Decimal("99"), Decimal("100"), None)
+    assert threshold is None
+
+
+def test_limit_threshold_negative_limit():
+    threshold = check_limit_threshold_crossed(Decimal("99"), Decimal("100"), Decimal("-100"))
+    assert threshold is None
+
+
+def test_limit_threshold_zero_limit():
+    threshold = check_limit_threshold_crossed(Decimal("0"), Decimal("1"), Decimal("0"))
+    assert threshold is None
+
+
+def test_limit_threshold_already_above_80_no_double_warning():
+    """If already above 80% before, adding more should not re-warn at 80%."""
+    threshold = check_limit_threshold_crossed(Decimal("85"), Decimal("90"), Decimal("100"))
+    assert threshold is None

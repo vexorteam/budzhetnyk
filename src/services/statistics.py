@@ -104,6 +104,23 @@ def _get_period_label(period: PeriodType) -> str:
     raise InvalidPeriodError(period)
 
 
+def check_limit_threshold_crossed(
+    amount_before: Decimal,
+    amount_after: Decimal,
+    limit: Decimal | None,
+) -> str | None:
+    """Returns '100', '80', or None based on which threshold was first crossed."""
+    if limit is None or limit <= 0:
+        return None
+    pct_before = amount_before / limit * Decimal("100")
+    pct_after = amount_after / limit * Decimal("100")
+    if pct_before < Decimal("100") <= pct_after:
+        return "100"
+    if pct_before < Decimal("80") <= pct_after:
+        return "80"
+    return None
+
+
 async def get_period_stats(
     user_id: int,
     period: PeriodType,

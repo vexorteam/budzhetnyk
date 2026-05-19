@@ -1,0 +1,50 @@
+# Claude Code service files
+.claude/
+.claude-code/
+CLAUDE.local.md
+.aider*
+.cursor/
+
+# Environment
+.env
+.env.local
+
+# Data
+data/*.db
+data/*.db-journal
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+.coverage
+htmlcov/
+
+# Alembic (runtime artifacts only)
+migrations/versions/__pycache__/

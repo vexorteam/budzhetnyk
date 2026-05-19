@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from src.db.models import Expense
     from src.services.statistics import PeriodStats
 
 
@@ -26,6 +27,16 @@ def format_percent(value: Decimal) -> str:
 
 def format_date(dt: datetime) -> str:
     return dt.strftime("%d.%m.%Y")
+
+
+def format_expense_line(expense: Expense) -> str:
+    from zoneinfo import ZoneInfo
+
+    kyiv = ZoneInfo("Europe/Kyiv")
+    local_dt = expense.created_at.replace(tzinfo=ZoneInfo("UTC")).astimezone(kyiv)
+    date_str = local_dt.strftime("%d.%m.%Y %H:%M")
+    desc_part = f" · {expense.description}" if expense.description else ""
+    return f"{date_str} · {expense.category.emoji} {expense.category.name} · {format_amount(expense.amount)}{desc_part}"
 
 
 def format_stats(stats: PeriodStats, monthly_limit: Decimal | None = None) -> str:

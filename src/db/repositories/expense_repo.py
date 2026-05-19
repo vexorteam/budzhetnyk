@@ -61,6 +61,15 @@ class ExpenseRepository:
             await self._session.delete(expense)
             await self._session.flush()
 
+    async def get_recent(self, user_id: int, limit: int = 10) -> list[Expense]:
+        result = await self._session.execute(
+            select(Expense)
+            .where(Expense.user_id == user_id)
+            .order_by(Expense.created_at.desc(), Expense.id.desc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
     async def get_month_total(self, user_id: int, year: int, month: int) -> Decimal:
         date_from = datetime(year, month, 1)
         date_to = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)

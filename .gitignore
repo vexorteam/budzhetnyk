@@ -4,6 +4,7 @@
 CLAUDE.local.md
 .aider*
 .cursor/
+CLAUDE.md
 
 # Environment
 .env

@@ -30,3 +30,9 @@ class InvalidKeywordError(ExpenseBotError):
     def __init__(self, keyword: str) -> None:
         super().__init__(f"Invalid keyword: {keyword!r}")
         self.keyword = keyword
+
+
+class InvalidPeriodError(ExpenseBotError):
+    def __init__(self, period: str) -> None:
+        super().__init__(f"Invalid stats period: {period!r}")
+        self.period = period

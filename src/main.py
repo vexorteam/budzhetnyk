@@ -8,6 +8,7 @@ from loguru import logger
 
 from src.bot.handlers import expense as expense_handler
 from src.bot.handlers import start as start_handler
+from src.bot.handlers import stats as stats_handler
 from src.bot.middlewares.user import UserMiddleware
 from src.config import get_settings
 from src.db.repositories.category_repo import CategoryRepository
@@ -49,6 +50,7 @@ async def main() -> None:
     dp = Dispatcher()
     dp.update.middleware(UserMiddleware())
     dp.include_router(start_handler.router)
+    dp.include_router(stats_handler.router)
     dp.include_router(expense_handler.router)
 
     await _seed_categories()

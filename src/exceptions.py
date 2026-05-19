@@ -18,3 +18,15 @@ class CategoryNotFoundError(ExpenseBotError):
         if identifier is not None:
             msg = f"Category not found: {identifier}"
         super().__init__(msg)
+
+
+class ExpenseParsingError(ExpenseBotError):
+    def __init__(self, text: str) -> None:
+        super().__init__(f"Cannot parse expense from: {text!r}")
+        self.text = text
+
+
+class InvalidKeywordError(ExpenseBotError):
+    def __init__(self, keyword: str) -> None:
+        super().__init__(f"Invalid keyword: {keyword!r}")
+        self.keyword = keyword

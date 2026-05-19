@@ -1,0 +1,55 @@
+from datetime import datetime
+from decimal import Decimal
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.db.models import Expense
+
+
+class ExpenseRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def create(
+        self,
+        user_id: int,
+        category_id: int,
+        amount: Decimal,
+        description: str | None,
+    ) -> Expense:
+        expense = Expense(
+            user_id=user_id,
+            category_id=category_id,
+            amount=amount,
+            description=description,
+        )
+        self._session.add(expense)
+        await self._session.flush()
+        return expense
+
+    async def get_last_for_user(self, user_id: int) -> Expense | None:
+        result = await self._session.execute(
+            select(Expense)
+            .where(Expense.user_id == user_id)
+            .order_by(Expense.created_at.desc(), Expense.id.desc())
+            .limit(1)
+        )
+        return result.scalars().first()
+
+    async def get_period_expenses(
+        self,
+        user_id: int,
+        date_from: datetime,
+        date_to: datetime,
+    ) -> list[Expense]:
+        result = await self._session.execute(
+            select(Expense)
+            .where(
+                Expense.user_id == user_id,
+                Expense.created_at >= date_from,
+                Expense.created_at < date_to,
+            )
+            .order_by(Expense.created_at)
+        )
+        return list(result.scalars().all())

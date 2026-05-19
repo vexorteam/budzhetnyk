@@ -36,3 +36,17 @@ class InvalidPeriodError(ExpenseBotError):
     def __init__(self, period: str) -> None:
         super().__init__(f"Invalid stats period: {period!r}")
         self.period = period
+
+
+class ChartGenerationError(ExpenseBotError):
+    def __init__(self, detail: str = "") -> None:
+        msg = "Chart generation failed"
+        if detail:
+            msg = f"{msg}: {detail}"
+        super().__init__(msg)
+        self.detail = detail
+
+
+class NoDataForChartError(ExpenseBotError):
+    def __init__(self) -> None:
+        super().__init__("No data available for chart")
